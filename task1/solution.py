@@ -36,7 +36,9 @@ class Model(object):
         We already provide a random number generator for reproducibility.
         """
         self.rng = np.random.default_rng(seed=0)
-
+        kernel = RBF() + WhiteKernel()
+        self.gpr = GaussianProcessRegressor(kernel=kernel, random_state=0,
+                                            normalize_y=True)
         # TODO: Add custom initialization for your model here if necessary
 
     def predict(self, x: np.ndarray) -> typing.Tuple[np.ndarray, np.ndarray, np.ndarray]:
@@ -49,8 +51,10 @@ class Model(object):
         """
 
         # TODO: Use your GP to estimate the posterior mean and stddev for each location here
-        gp_mean = np.zeros(x.shape[0], dtype=float)
-        gp_std = np.zeros(x.shape[0], dtype=float)
+        gp_mean, gp_std = self.gpr.predict(x, return_std=True)
+        # gp_mean =
+        # gp_mean = np.zeros(x.shape[0], dtype=float)
+        # gp_std = np.zeros(x.shape[0], dtype=float)
 
         # TODO: Use the GP posterior to form your predictions here
         predictions = gp_mean
@@ -65,7 +69,14 @@ class Model(object):
         """
 
         # TODO: Fit your model here
-        pass
+        N = 4000
+        if train_x.shape[0] > N:
+            train_x = train_x[:N, :]
+            train_y = train_y[:N]
+        self.gpr.fit(train_x, train_y)
+        print("score of gpr (RBF): ", self.gpr.score(train_x, train_y))
+        print("LLD of gpr: ", self.gpr.log_marginal_likelihood())
+        print("parameters of gpr: ", self.gpr.get_params())
 
 
 def cost_function(y_true: np.ndarray, y_predicted: np.ndarray) -> float:
@@ -163,6 +174,13 @@ def main():
     # Load the training dateset and test features
     train_x = np.loadtxt('train_x.csv', delimiter=',', skiprows=1)
     train_y = np.loadtxt('train_y.csv', delimiter=',', skiprows=1)
+    print(train_x.shape)
+    print(train_y.shape)
+    N = 1000
+    train_x = train_x[:N, :]
+    train_y = train_y[:N]
+    print(train_x.shape)
+    print(train_y.shape)
     test_x = np.loadtxt('test_x.csv', delimiter=',', skiprows=1)
 
     # Fit the model
