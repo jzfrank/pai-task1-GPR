@@ -9,6 +9,15 @@ from sklearn.model_selection import KFold
 import matplotlib.pyplot as plt
 from matplotlib import cm
 
+import tqdm
+import torch
+import gpytorch
+from torch.utils.data import TensorDataset, DataLoader
+from gpytorch.models import ApproximateGP
+from gpytorch.variational import CholeskyVariationalDistribution
+from gpytorch.variational import VariationalStrategy
+
+
 
 # Set `EXTENDED_EVALUATION` to `True` in order to visualize your predictions.
 EXTENDED_EVALUATION = False
@@ -22,6 +31,18 @@ COST_W_NORMAL = 1.0
 COST_W_OVERPREDICT = 5.0
 COST_W_THRESHOLD = 20.0
 
+class GPModel(ApproximateGP):
+    def __init__(self, inducing_points):
+        variational_distribution = CholeskyVariationalDistribution(inducing_points.size(0))
+        variational_strategy = VariationalStrategy(self, inducing_points, variational_distribution, learn_inducing_locations=True)
+        super(GPModel, self).__init__(variational_strategy)
+        self.mean_module = gpytorch.means.ConstantMean()
+        self.covar_module = gpytorch.kernels.ScaleKernel(gpytorch.kernels.RBFKernel())
+
+    def forward(self, x):
+        mean_x = self.mean_module(x)
+        covar_x = self.covar_module(x)
+        return gpytorch.distributions.MultivariateNormal(mean_x, covar_x)
 
 class Model(object):
     """
@@ -37,9 +58,11 @@ class Model(object):
         """
         self.rng = np.random.default_rng(seed=0)
         kernel = RBF() + WhiteKernel()
-        self.gpr = GaussianProcessRegressor(kernel=kernel, random_state=0,
-                                            normalize_y=True)
+        self.gpr = GaussianProcessRegressor(kernel=kernel, random_state=0, normalize_y=True)
+        # self.model = None
+        # self.likelihood = None
         # TODO: Add custom initialization for your model here if necessary
+
 
     def predict(self, x: np.ndarray) -> typing.Tuple[np.ndarray, np.ndarray, np.ndarray]:
         """
@@ -49,16 +72,29 @@ class Model(object):
             Tuple of three 1d NumPy float arrays, each of shape (NUM_SAMPLES,),
             containing your predictions, the GP posterior mean, and the GP posterior stddev (in that order)
         """
-
+        # x = torch.from_numpy(x).float()
+        # model = self.model
+        # likelihood = self.likelihood
+        # model.eval()
+        # likelihood.eval()
+        # means = torch.tensor([0.])
+        # with torch.no_grad():
+        #     preds = model(x)
+        #     # for x_batch, y_batch in test_loader:
+        #     #     preds = model(x_batch)
+        #     #     means = torch.cat([means, preds.mean.cpu()])
+        # # means = means[1:]
+        # gp_mean, gp_std = preds.mean, preds.stddev
+        # gp_mean = gp_mean.cpu().detach().numpy()
+        # gp_std  = gp_std.cpu().detach().numpy()
         # TODO: Use your GP to estimate the posterior mean and stddev for each location here
         gp_mean, gp_std = self.gpr.predict(x, return_std=True)
-        # gp_mean =
-        # gp_mean = np.zeros(x.shape[0], dtype=float)
-        # gp_std = np.zeros(x.shape[0], dtype=float)
+
+        gp_mean = np.zeros(x.shape[0], dtype=float)
+        gp_std = np.zeros(x.shape[0], dtype=float)
 
         # TODO: Use the GP posterior to form your predictions here
         predictions = gp_mean
-
         return predictions, gp_mean, gp_std
 
     def fit_model(self, train_x: np.ndarray, train_y: np.ndarray):
@@ -67,9 +103,54 @@ class Model(object):
         :param train_x: Training features as a 2d NumPy float array of shape (NUM_SAMPLES, 2)
         :param train_y: Training pollution concentrations as a 1d NumPy float array of shape (NUM_SAMPLES,)
         """
-
+        # train_x = torch.from_numpy(train_x).contiguous().float()
+        # train_y = torch.from_numpy(train_y).contiguous().float()
+        # train_dataset = TensorDataset(train_x, train_y)
+        # train_loader = DataLoader(train_dataset, batch_size=1024, shuffle=True)
+        #
+        # inducing_points = train_x[:2000, :]
+        # model = GPModel(inducing_points=inducing_points)
+        # likelihood = gpytorch.likelihoods.GaussianLikelihood()
+        #
+        # # train the model
+        # num_epochs = 50
+        #
+        # model.train()
+        # likelihood.train()
+        #
+        # optimizer = torch.optim.Adam([
+        #     {'params': model.parameters()},
+        #     {'params': likelihood.parameters()},
+        # ], lr=0.1)
+        #
+        # # Our loss object. We're using the VariationalELBO
+        # mll = gpytorch.mlls.VariationalELBO(likelihood, model, num_data=train_y.size(0))
+        #
+        # epochs_iter = tqdm.tqdm(range(num_epochs), desc="Epoch")
+        # losses = []
+        # for i in epochs_iter:
+        #     # Within each iteration, we will go over each minibatch of data
+        #     minibatch_iter = tqdm.tqdm(train_loader, desc="Minibatch", leave=False)
+        #     for x_batch, y_batch in minibatch_iter:
+        #         optimizer.zero_grad()
+        #         output = model(x_batch)
+        #         loss = -mll(output, y_batch)
+        #         losses.append(loss.item())
+        #         minibatch_iter.set_postfix(loss=loss.item())
+        #         loss.backward()
+        #         optimizer.step()
+        #
+        #
+        # self.model = model
+        # self.likelihood = likelihood
+        #
+        # plt.plot(losses)
         # TODO: Fit your model here
+        perm = np.random.permutation(train_x.shape[0])
+        train_x = train_x[perm]
+        train_y = train_y[perm]
         N = 4000
+
         if train_x.shape[0] > N:
             train_x = train_x[:N, :]
             train_y = train_y[:N]
@@ -174,13 +255,16 @@ def main():
     # Load the training dateset and test features
     train_x = np.loadtxt('train_x.csv', delimiter=',', skiprows=1)
     train_y = np.loadtxt('train_y.csv', delimiter=',', skiprows=1)
+    perm = np.random.permutation(train_x.shape[0])
+    train_x = train_x[perm]
+    train_y = train_y[perm]
     print(train_x.shape)
     print(train_y.shape)
-    N = 1000
-    train_x = train_x[:N, :]
-    train_y = train_y[:N]
-    print(train_x.shape)
-    print(train_y.shape)
+    # N = 1000
+    # train_x = train_x[:N, :]
+    # train_y = train_y[:N]
+    # print(train_x.shape)
+    # print(train_y.shape)
     test_x = np.loadtxt('test_x.csv', delimiter=',', skiprows=1)
 
     # Fit the model
