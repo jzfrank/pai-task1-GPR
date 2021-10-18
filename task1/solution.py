@@ -31,21 +31,163 @@ COST_W_NORMAL = 1.0
 COST_W_OVERPREDICT = 5.0
 COST_W_THRESHOLD = 20.0
 
-class GPModel(ApproximateGP):
+class ApproximateGPModel(ApproximateGP):
     def __init__(self, inducing_points):
-        variational_distribution = CholeskyVariationalDistribution(inducing_points.size(0))
-        variational_strategy = VariationalStrategy(self, inducing_points, variational_distribution, learn_inducing_locations=True)
+        variational_distribution = gpytorch.variational.NaturalVariationalDistribution(inducing_points.size(0))
+        variational_strategy = gpytorch.variational.VariationalStrategy(
+            self, inducing_points, variational_distribution, learn_inducing_locations=True
+        )
         super(GPModel, self).__init__(variational_strategy)
         self.mean_module = gpytorch.means.ConstantMean()
-        self.covar_module = gpytorch.kernels.ScaleKernel(
-            gpytorch.kernels.MaternKernel()
-            # gpytorch.kernels.RBFKernel()
-        )
+        kernel = gpytorch.kernels.MaternKernel()
+        # kernel = gpytorch.kernels.RBFKernel(length_scale=1) + gpytorch.kernels.WhiteKernel()
+        self.covar_module = gpytorch.kernels.ScaleKernel(kernel)
 
     def forward(self, x):
         mean_x = self.mean_module(x)
         covar_x = self.covar_module(x)
         return gpytorch.distributions.MultivariateNormal(mean_x, covar_x)
+
+# We will use the simplest form of GP model, exact inference
+class ExactGPModel(gpytorch.models.ExactGP):
+    def __init__(self, train_x, train_y, likelihood):
+        super(ExactGPModel, self).__init__(train_x, train_y, likelihood)
+        self.mean_module = gpytorch.means.ConstantMean()
+        self.covar_module = gpytorch.kernels.ScaleKernel(gpytorch.kernels.RBFKernel())
+
+    def forward(self, x):
+        mean_x = self.mean_module(x)
+        covar_x = self.covar_module(x)
+        return gpytorch.distributions.MultivariateNormal(mean_x, covar_x)
+
+
+class VariationalGP():
+    def __init__(self):
+        self.model = None
+        self.likelihood = None
+
+    def predict(self, x: np.ndarray) -> typing.Tuple[np.ndarray, np.ndarray, np.ndarray]:
+        x = torch.from_numpy(x).float()
+        self.model.eval()
+        self.likelihood.eval()
+        means = torch.tensor([0.])
+        with torch.no_grad():
+            preds = self.model(x)
+        gp_mean, gp_std = preds.mean, preds.stddev
+        gp_mean = gp_mean.cpu().detach().numpy()
+        gp_std = gp_std.cpu().detach().numpy()
+        predictions = gp_mean
+        return predictions, gp_mean, gp_std
+
+    def fit_model(self, train_x: np.ndarray, train_y: np.ndarray):
+        """
+        Fit your model on the given training data.
+        :param train_x: Training features as a 2d NumPy float array of shape (NUM_SAMPLES, 2)
+        :param train_y: Training pollution concentrations as a 1d NumPy float array of shape (NUM_SAMPLES,)
+        """
+        train_x = torch.from_numpy(train_x).contiguous().float()
+        train_y = torch.from_numpy(train_y).contiguous().float()
+        train_dataset = TensorDataset(train_x, train_y)
+        train_loader = DataLoader(train_dataset, batch_size=2048, shuffle=True)
+
+        inducing_points = train_x[:4000, :]
+        self.model = ApproximateGPModel(inducing_points=inducing_points)
+        self.likelihood = gpytorch.likelihoods.GaussianLikelihood()
+
+        # train the model
+        num_epochs = 5
+
+        self.model.train()
+        self.likelihood.train()
+
+        # two optimizers
+        variational_ngd_optimizer = gpytorch.optim.NGD(self.model.variational_parameters(),
+                                                       num_data=train_y.size(0), lr=1)
+        hyperparameter_optimizer = torch.optim.Adam([
+            {'params': self.model.hyperparameters()},
+            {'params': self.likelihood.parameters()},
+        ], lr=0.1)
+
+        # Our loss object. We're using the VariationalELBO
+        mll = gpytorch.mlls.VariationalELBO(self.likelihood, self.model, num_data=train_y.size(0))
+
+        epochs_iter = tqdm.tqdm(range(num_epochs), desc="Epoch")
+        losses = []
+        for i in epochs_iter:
+            # Within each iteration, we will go over each minibatch of data
+            minibatch_iter = tqdm.tqdm(train_loader, desc="Minibatch", leave=False)
+            for x_batch, y_batch in minibatch_iter:
+                variational_ngd_optimizer.zero_grad()
+                hyperparameter_optimizer.zero_grad()
+                output = self.model(x_batch)
+                # print("test MAE: ", torch.mean(torch.abs(output.mean - y_batch)))
+                loss = -mll(output, y_batch)
+                losses.append(loss.item())
+                test_mae = torch.mean(torch.abs(output.mean - y_batch))
+                minibatch_iter.set_postfix(loss=loss.item(),
+                                           bar = "test_mae: {}".format(test_mae))
+                # minibatch_iter.set_postfix()
+                loss.backward()
+                variational_ngd_optimizer.step()
+                hyperparameter_optimizer.step()
+
+class NaiveGP_gpy():
+    def __init__(self):
+        rbf = GPy.kern.RBF(input_dim=1, variance=1.0, lengthscale=1.0)
+        self.gpr = GPy.models.GPRegression(rbf)
+        # # Fix the noise variance to known value
+        # gpr.Gaussian_noise.variance = noise ** 2
+        # gpr.Gaussian_noise.variance.fix()
+
+    def predict(self, x: np.ndarray) -> typing.Tuple[np.ndarray, np.ndarray, np.ndarray]:
+        # Get into evaluation (predictive posterior) mode
+        x = torch.from_numpy(x).float()
+        self.model.eval()
+        self.likelihood.eval()
+
+        # Test points are regularly spaced along [0,1]
+        # Make predictions by feeding model through likelihood
+        with torch.no_grad(), gpytorch.settings.fast_pred_var():
+            preds = self.model(x)
+        gp_mean, gp_std = preds.mean, preds.stddev
+        gp_mean = gp_mean.cpu().detach().numpy()
+        gp_std = gp_std.cpu().detach().numpy()
+        predictions = gp_mean
+        return predictions, gp_mean, gp_std
+        # with torch.no_grad(), gpytorch.settings.fast_pred_var():
+        #     observed_pred = self.likelihood(model(x))
+
+    def fit_model(self, train_x: np.ndarray, train_y: np.ndarray):
+        # Run optimization
+        gpr.optimize(train_x, train_y);
+
+
+class NaiveGP():
+    def __init__(self):
+        kernel = RBF() + WhiteKernel() + Matern()
+        self.gpr = GaussianProcessRegressor(kernel=kernel, random_state=0,
+                                            normalize_y=True)
+
+    def predict(self, x: np.ndarray) -> typing.Tuple[np.ndarray, np.ndarray, np.ndarray]:
+        gp_mean, gp_std = self.gpr.predict(x, return_std=True)
+        predictions = gp_mean
+        return predictions, gp_mean, gp_std
+
+    def fit_model(self, train_x: np.ndarray, train_y: np.ndarray):
+        perm = np.random.permutation(train_x.shape[0])
+        train_x = train_x[perm]
+        train_y = train_y[perm]
+
+        N = 5000
+        if train_x.shape[0] > N:
+            train_x = train_x[:N, :]
+            train_y = train_y[:N]
+        self.gpr.fit(train_x, train_y)
+        print("test MAE: ", np.mean(np.abs(self.gpr.predict(train_x) - train_y)))
+        print("score of gpr (RBF): ", self.gpr.score(train_x, train_y))
+        print("LLD of gpr: ", self.gpr.log_marginal_likelihood())
+        print("parameters of gpr: ", self.gpr.get_params())
+
 
 class Model(object):
     """
@@ -62,9 +204,13 @@ class Model(object):
         self.rng = np.random.default_rng(seed=0)
         # kernel = RBF() + WhiteKernel()
         # self.gpr = GaussianProcessRegressor(kernel=kernel, random_state=0, normalize_y=True)
-        self.model = None
-        self.likelihood = None
+        # self.model = None
+        # self.likelihood = None
         # TODO: Add custom initialization for your model here if necessary
+        # self.model = VariationalGP()
+        # self.model = NaiveGP()
+        self.model = NaiveGP_gpy()
+        print("self.model: ", self.model)
 
 
     def predict(self, x: np.ndarray) -> typing.Tuple[np.ndarray, np.ndarray, np.ndarray]:
@@ -75,26 +221,27 @@ class Model(object):
             Tuple of three 1d NumPy float arrays, each of shape (NUM_SAMPLES,),
             containing your predictions, the GP posterior mean, and the GP posterior stddev (in that order)
         """
-        x = torch.from_numpy(x).float()
-        # model = self.model
-        # likelihood = self.likelihood
-        self.model.eval()
-        self.likelihood.eval()
-        means = torch.tensor([0.])
-        with torch.no_grad():
-            preds = self.model(x)
-        gp_mean, gp_std = preds.mean, preds.stddev
-        gp_mean = gp_mean.cpu().detach().numpy()
-        gp_std  = gp_std.cpu().detach().numpy()
-        # TODO: Use your GP to estimate the posterior mean and stddev for each location here
-        # gp_mean, gp_std = self.gpr.predict(x, return_std=True)
+        return  self.model.predict(x)
+        # x = torch.from_numpy(x).float()
+        # # model = self.model
+        # # likelihood = self.likelihood
+        # self.model.eval()
+        # self.likelihood.eval()
+        # means = torch.tensor([0.])
+        # with torch.no_grad():
+        #     preds = self.model(x)
+        # gp_mean, gp_std = preds.mean, preds.stddev
+        # gp_mean = gp_mean.cpu().detach().numpy()
+        # gp_std  = gp_std.cpu().detach().numpy()
+        # # TODO: Use your GP to estimate the posterior mean and stddev for each location here
+        # # gp_mean, gp_std = self.gpr.predict(x, return_std=True)
+        # #
+        # # gp_mean = np.zeros(x.shape[0], dtype=float)
+        # # gp_std = np.zeros(x.shape[0], dtype=float)
         #
-        # gp_mean = np.zeros(x.shape[0], dtype=float)
-        # gp_std = np.zeros(x.shape[0], dtype=float)
-
-        # TODO: Use the GP posterior to form your predictions here
-        predictions = gp_mean
-        return predictions, gp_mean, gp_std
+        # # TODO: Use the GP posterior to form your predictions here
+        # predictions = gp_mean
+        # return predictions, gp_mean, gp_std
 
     def fit_model(self, train_x: np.ndarray, train_y: np.ndarray):
         """
@@ -102,42 +249,48 @@ class Model(object):
         :param train_x: Training features as a 2d NumPy float array of shape (NUM_SAMPLES, 2)
         :param train_y: Training pollution concentrations as a 1d NumPy float array of shape (NUM_SAMPLES,)
         """
-        train_x = torch.from_numpy(train_x).contiguous().float()
-        train_y = torch.from_numpy(train_y).contiguous().float()
-        train_dataset = TensorDataset(train_x, train_y)
-        train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True)
-
-        inducing_points = train_x[:1000, :]
-        self.model = GPModel(inducing_points=inducing_points)
-        self.likelihood = gpytorch.likelihoods.GaussianLikelihood()
-
-        # train the model
-        num_epochs = 50
-
-        self.model.train()
-        self.likelihood.train()
-
-        optimizer = torch.optim.Adam([
-            {'params': self.model.parameters()},
-            {'params': self.likelihood.parameters()},
-        ], lr=0.01)
-
-        # Our loss object. We're using the VariationalELBO
-        mll = gpytorch.mlls.VariationalELBO(self.likelihood, self.model, num_data=train_y.size(0))
-
-        epochs_iter = tqdm.tqdm(range(num_epochs), desc="Epoch")
-        losses = []
-        for i in epochs_iter:
-            # Within each iteration, we will go over each minibatch of data
-            minibatch_iter = tqdm.tqdm(train_loader, desc="Minibatch", leave=False)
-            for x_batch, y_batch in minibatch_iter:
-                optimizer.zero_grad()
-                output = self.model(x_batch)
-                loss = -mll(output, y_batch)
-                losses.append(loss.item())
-                minibatch_iter.set_postfix(loss=loss.item())
-                loss.backward()
-                optimizer.step()
+        self.model.fit_model(train_x, train_y)
+        # train_x = torch.from_numpy(train_x).contiguous().float()
+        # train_y = torch.from_numpy(train_y).contiguous().float()
+        # train_dataset = TensorDataset(train_x, train_y)
+        # train_loader = DataLoader(train_dataset, batch_size=1024, shuffle=True)
+        #
+        # inducing_points = train_x[:1000, :]
+        # self.model = GPModel(inducing_points=inducing_points)
+        # self.likelihood = gpytorch.likelihoods.GaussianLikelihood()
+        #
+        # # train the model
+        # num_epochs = 10
+        #
+        # self.model.train()
+        # self.likelihood.train()
+        #
+        # # two optimizers
+        # variational_ngd_optimizer = gpytorch.optim.NGD(self.model.variational_parameters(),
+        #                                                num_data=train_y.size(0), lr=0.01)
+        # hyperparameter_optimizer = torch.optim.Adam([
+        #     {'params': self.model.hyperparameters()},
+        #     {'params': self.likelihood.parameters()},
+        # ], lr=0.1)
+        #
+        # # Our loss object. We're using the VariationalELBO
+        # mll = gpytorch.mlls.VariationalELBO(self.likelihood, self.model, num_data=train_y.size(0))
+        #
+        # epochs_iter = tqdm.tqdm(range(num_epochs), desc="Epoch")
+        # losses = []
+        # for i in epochs_iter:
+        #     # Within each iteration, we will go over each minibatch of data
+        #     minibatch_iter = tqdm.tqdm(train_loader, desc="Minibatch", leave=False)
+        #     for x_batch, y_batch in minibatch_iter:
+        #         variational_ngd_optimizer.zero_grad()
+        #         hyperparameter_optimizer.zero_grad()
+        #         output = self.model(x_batch)
+        #         loss = -mll(output, y_batch)
+        #         losses.append(loss.item())
+        #         minibatch_iter.set_postfix(loss=loss.item())
+        #         loss.backward()
+        #         variational_ngd_optimizer.step()
+        #         hyperparameter_optimizer.step()
 
 
         #
