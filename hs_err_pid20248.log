@@ -1,7 +1,7 @@
 #
 # A fatal error has been detected by the Java Runtime Environment:
 #
-#  SIGSEGV (0xb) at pc=0x00007fff205945d2, pid=70570, tid=5891
+#  SIGSEGV (0xb) at pc=0x00007fff205945d2, pid=20248, tid=5635
 #
 # JRE version:  (11.0.6+8) (build )
 # Java VM: OpenJDK 64-Bit Server VM (11.0.6+8-b765.1, mixed mode, sharing, tiered, compressed oops, g1 gc, bsd-amd64)
@@ -19,13 +19,13 @@
 Command Line: getsp -test
 
 Host: MacBookPro15,1 x86_64 2600 MHz, 12 cores, 16G, Darwin 20.3.0
-Time: Sun Oct 17 22:27:14 2021 CEST elapsed time: 0 seconds (0d 0h 0m 0s)
+Time: Sun Oct 17 16:07:09 2021 CEST elapsed time: 0 seconds (0d 0h 0m 0s)
 
 ---------------  T H R E A D  ---------------
 
-Current thread (0x00007f904580a000):  JavaThread "Unknown thread" [_thread_in_vm, id=5891, stack(0x00007000072d7000,0x00007000073d7000)]
+Current thread (0x00007f9bae00c000):  JavaThread "Unknown thread" [_thread_in_vm, id=5635, stack(0x0000700007bb8000,0x0000700007cb8000)]
 
-Stack: [0x00007000072d7000,0x00007000073d7000],  sp=0x00007000073d6b70,  free space=1022k
+Stack: [0x0000700007bb8000,0x0000700007cb8000],  sp=0x0000700007cb7b70,  free space=1022k
 Native frames: (J=compiled Java code, A=aot compiled Java code, j=interpreted, Vv=VM code, C=native code)
 C  [libsystem_platform.dylib+0x15d2]  _platform_strlen+0x12
 V  [libjvm.dylib+0x1ea187]  ClassLoader::setup_boot_search_path(char const*)+0x1d
@@ -41,46 +41,46 @@ C  [libsystem_pthread.dylib+0x247b]  thread_start+0xf
 siginfo: si_signo: 11 (SIGSEGV), si_code: 1 (SEGV_MAPERR), si_addr: 0x0000000000000000
 
 Registers:
-RAX=0x00000001161368f2, RBX=0x0000000116139990, RCX=0x0000000000000000, RDX=0x0000000000000000
-RSP=0x00007000073d6b70, RBP=0x00007000073d6b70, RSI=0x0000000000000000, RDI=0x0000000000000000
+RAX=0x00000001151368f2, RBX=0x0000000115139990, RCX=0x0000000000000000, RDX=0x0000000000000000
+RSP=0x0000700007cb7b70, RBP=0x0000700007cb7b70, RSI=0x0000000000000000, RDI=0x0000000000000000
 R8 =0x0000000000000000, R9 =0x0000000000000000, R10=0x0000000000000000, R11=0x0000000000000000
-R12=0x00007f904580a000, R13=0x00007000073d6f80, R14=0x0000000115daabfa, R15=0x00007000073d6ef7
+R12=0x00007f9bae00c000, R13=0x0000700007cb7f80, R14=0x0000000114daabfa, R15=0x0000700007cb7ef7
 RIP=0x00007fff205945d2, EFLAGS=0x0000000000010246, ERR=0x0000000000000004
   TRAPNO=0x000000000000000e
 
-Top of Stack: (sp=0x00007000073d6b70)
-0x00007000073d6b70:   00007000073d6c90 00000001159ea187
-0x00007000073d6b80:   00007f9045504850 0000000000000008
-0x00007000073d6b90:   00007f9045714450 0000000000000040
-0x00007000073d6ba0:   00007000073d6bd0 0000000115e2447c
-0x00007000073d6bb0:   0000000000000038 0000000000000008
-0x00007000073d6bc0:   00007f9045716730 0000000000000040
-0x00007000073d6bd0:   00007000073d6c30 0000000115e22a69
-0x00007000073d6be0:   00007000073d6c10 0000000115dcd869
-0x00007000073d6bf0:   00007f9045504850 00007f9045716730
-0x00007000073d6c00:   00007f9046304490 00007f90457144d0
-0x00007000073d6c10:   00007000073d6c50 0000000115e230ec
-0x00007000073d6c20:   00007f9045716730 00007f9045716730
-0x00007000073d6c30:   0000000000000004 0000000115f83b18
-0x00007000073d6c40:   000000000000000b 0000000000000000
-0x00007000073d6c50:   9bb5fa954dfb003a 0000000000000000
-0x00007000073d6c60:   0000000115daabfa 0000000116139990
-0x00007000073d6c70:   00007f904580a000 00007000073d6f80
-0x00007000073d6c80:   0000000115daabfa 00007000073d6ef7
-0x00007000073d6c90:   00007000073d6cc0 00000001159ecb76
-0x00007000073d6ca0:   00007f904580a000 00007f904580a000
-0x00007000073d6cb0:   0000000116139990 0000000115daabfa
-0x00007000073d6cc0:   00007000073d6d10 0000000115b7e881
-0x00007000073d6cd0:   00007f904580a000 00007f9045605010
-0x00007000073d6ce0:   00007f9045605100 00007f9045605110
-0x00007000073d6cf0:   00007f90456051e8 00000000000000d8
-0x00007000073d6d00:   00007f9045604c20 0000000116139990
-0x00007000073d6d10:   00007000073d6ea0 0000000115ef1587
-0x00007000073d6d20:   0000000000000000 0000000000000000
-0x00007000073d6d30:   0000000000000000 0000000000000000
-0x00007000073d6d40:   0000000000000000 0000000000000000
-0x00007000073d6d50:   0000000000000000 0000000000000000
-0x00007000073d6d60:   0000000000000100 0000000000000000 
+Top of Stack: (sp=0x0000700007cb7b70)
+0x0000700007cb7b70:   0000700007cb7c90 00000001149ea187
+0x0000700007cb7b80:   00007f9bad6107e0 0000000000000008
+0x0000700007cb7b90:   00007f9bad60eef0 0000000000000040
+0x0000700007cb7ba0:   0000700007cb7bd0 0000000114e2447c
+0x0000700007cb7bb0:   0000000000000038 0000000000000008
+0x0000700007cb7bc0:   00007f9bad613b80 0000000000000040
+0x0000700007cb7bd0:   0000700007cb7c30 0000000114e22a69
+0x0000700007cb7be0:   0000700007cb7c10 0000000114dcd869
+0x0000700007cb7bf0:   00007f9bad6107e0 00007f9bad613b80
+0x0000700007cb7c00:   00007f9bad610f00 00007f9bad60ef70
+0x0000700007cb7c10:   0000700007cb7c50 0000000114e230ec
+0x0000700007cb7c20:   00007f9bad613b80 00007f9bad613b80
+0x0000700007cb7c30:   0000000000000004 0000000114f83b18
+0x0000700007cb7c40:   000000000000000b 0000000000000000
+0x0000700007cb7c50:   176b2b34963d00b5 0000000000000000
+0x0000700007cb7c60:   0000000114daabfa 0000000115139990
+0x0000700007cb7c70:   00007f9bae00c000 0000700007cb7f80
+0x0000700007cb7c80:   0000000114daabfa 0000700007cb7ef7
+0x0000700007cb7c90:   0000700007cb7cc0 00000001149ecb76
+0x0000700007cb7ca0:   00007f9bae00c000 00007f9bae00c000
+0x0000700007cb7cb0:   0000000115139990 0000000114daabfa
+0x0000700007cb7cc0:   0000700007cb7d10 0000000114b7e881
+0x0000700007cb7cd0:   00007f9bae00c000 00007f9bad6107a0
+0x0000700007cb7ce0:   00007f9bad610f10 00007f9bad610f20
+0x0000700007cb7cf0:   00007f9bad610ff8 00000000000000d8
+0x0000700007cb7d00:   00007f9bad610e60 0000000115139990
+0x0000700007cb7d10:   0000700007cb7ea0 0000000114ef1587
+0x0000700007cb7d20:   0000000000000000 0000000000000000
+0x0000700007cb7d30:   0000000000000000 0000000000000000
+0x0000700007cb7d40:   0000000000000000 0000000000000000
+0x0000700007cb7d50:   0000000000000000 0000000000000000
+0x0000700007cb7d60:   0000000000000100 0000000000000000 
 
 Instructions: (pc=0x00007fff205945d2)
 0x00007fff205944d2:   74 09 48 83 c1 01 48 39 d1 72 e3 5d c3 90 55 48
@@ -121,21 +121,21 @@ Instructions: (pc=0x00007fff205945d2)
 ---------------  P R O C E S S  ---------------
 
 Threads class SMR info:
-_java_thread_list=0x00007f9045405710, length=0, elements={
+_java_thread_list=0x00007f9baf0049e0, length=0, elements={
 }
 
 Java Threads: ( => current thread )
 
 Other Threads:
 
-[error occurred during error reporting (printing all threads), id 0xb, SIGSEGV (0xb) at pc=0x0000000115ef28a2]
+[error occurred during error reporting (printing all threads), id 0xb, SIGSEGV (0xb) at pc=0x0000000114ef28a2]
 
 VM state:not at safepoint (not fully initialized)
 
 VM Mutex/Monitor currently owned by a thread: None
 
 
-[error occurred during error reporting (printing compressed oops mode), id 0xb, SIGSEGV (0xb) at pc=0x0000000115f09904]
+[error occurred during error reporting (printing compressed oops mode), id 0xb, SIGSEGV (0xb) at pc=0x0000000114f09904]
 
 Deoptimization events (0 events):
 No events
@@ -147,9 +147,9 @@ Internal exceptions (0 events):
 No events
 
 Events (3 events):
-Event: 0.025 Protecting memory [0x00007000072d7000,0x00007000072db000] with protection modes 0
-Event: 0.034 Loaded shared library /Users/zhangjin/anaconda3/lib/libzip.dylib
-Event: 0.036 Loaded shared library /Users/zhangjin/anaconda3/lib/libjimage.dylib
+Event: 0.042 Protecting memory [0x0000700007bb8000,0x0000700007bbc000] with protection modes 0
+Event: 0.057 Loaded shared library /Users/zhangjin/anaconda3/lib/libzip.dylib
+Event: 0.072 Loaded shared library /Users/zhangjin/anaconda3/lib/libjimage.dylib
 
 
 Dynamic libraries:
@@ -157,7 +157,7 @@ Dynamic libraries:
 0x00007fff22403000 	/System/Library/Frameworks/Security.framework/Versions/A/Security
 0x00007fff333db000 	/System/Library/Frameworks/ApplicationServices.framework/Versions/A/ApplicationServices
 0x00007fff2a68c000 	/usr/lib/libz.1.dylib
-0x000000010f281000 	/Users/zhangjin/anaconda3/lib/jli/libjli.dylib
+0x000000010e175000 	/Users/zhangjin/anaconda3/lib/jli/libjli.dylib
 0x00007fff2a754000 	/usr/lib/libSystem.B.dylib
 0x00007fff22e2a000 	/System/Library/Frameworks/AppKit.framework/Versions/C/AppKit
 0x00007fff25cc2000 	/System/Library/Frameworks/CoreData.framework/Versions/A/CoreData
@@ -402,11 +402,11 @@ Dynamic libraries:
 0x00007fff2d2bd000 	/System/Library/PrivateFrameworks/AudioResourceArbitration.framework/Versions/A/AudioResourceArbitration
 0x00007fff2b2ba000 	/System/Library/PrivateFrameworks/IconFoundation.framework/Versions/A/IconFoundation
 0x00007fff2fde6000 	/System/Library/PrivateFrameworks/SpeechRecognitionCore.framework/Versions/A/SpeechRecognitionCore
-0x0000000115800000 	/Users/zhangjin/anaconda3/lib/server/libjvm.dylib
-0x000000010f2b2000 	/Users/zhangjin/anaconda3/lib/libverify.dylib
-0x000000010f2c3000 	/Users/zhangjin/anaconda3/lib/libjava.dylib
-0x000000010f33a000 	/Users/zhangjin/anaconda3/lib/libzip.dylib
-0x000000010f346000 	/Users/zhangjin/anaconda3/lib/libjimage.dylib
+0x0000000114800000 	/Users/zhangjin/anaconda3/lib/server/libjvm.dylib
+0x000000010e1a5000 	/Users/zhangjin/anaconda3/lib/libverify.dylib
+0x000000010e1b6000 	/Users/zhangjin/anaconda3/lib/libjava.dylib
+0x000000010e22d000 	/Users/zhangjin/anaconda3/lib/libzip.dylib
+0x000000010e239000 	/Users/zhangjin/anaconda3/lib/libjimage.dylib
 
 
 VM Arguments:
@@ -452,11 +452,11 @@ SIGQUIT: SIG_DFL, sa_mask[0]=00000000000000000000000000000000, sa_flags=none
 
 OS:uname:Darwin 20.3.0 Darwin Kernel Version 20.3.0: Thu Jan 21 00:07:06 PST 2021; root:xnu-7195.81.3~1/RELEASE_X86_64 x86_64
 rlimit: STACK 8192k, CORE 0k, NPROC 2784, NOFILE 10240, AS infinity, DATA infinity, FSIZE infinity
-load average:4.71 3.71 3.69
+load average:3.21 2.17 2.41
 
 CPU:total 12 (initial active 12) 
 
-Memory: 4k page, physical 16777216k(39220k free), swap 5242880k(1333248k free)
+Memory: 4k page, physical 16777216k(65068k free), swap 4194304k(1364224k free)
 
 vm_info: OpenJDK 64-Bit Server VM (11.0.6+8-b765.1) for bsd-amd64 JRE (11.0.6+8-b765.1), built on Feb 21 2020 17:31:52 by "builduser" with gcc 4.2.1 Compatible Apple LLVM 10.0.0 (clang-1000.10.44.4)
 
