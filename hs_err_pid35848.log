@@ -1,7 +1,7 @@
 #
 # A fatal error has been detected by the Java Runtime Environment:
 #
-#  SIGSEGV (0xb) at pc=0x00007fff205945d2, pid=59132, tid=10243
+#  SIGSEGV (0xb) at pc=0x00007fff205945d2, pid=35848, tid=10243
 #
 # JRE version:  (11.0.6+8) (build )
 # Java VM: OpenJDK 64-Bit Server VM (11.0.6+8-b765.1, mixed mode, sharing, tiered, compressed oops, g1 gc, bsd-amd64)
@@ -19,13 +19,13 @@
 Command Line: getsp -test
 
 Host: MacBookPro15,1 x86_64 2600 MHz, 12 cores, 16G, Darwin 20.3.0
-Time: Mon Oct 18 23:37:11 2021 CEST elapsed time: 0 seconds (0d 0h 0m 0s)
+Time: Sun Oct 17 17:14:33 2021 CEST elapsed time: 0 seconds (0d 0h 0m 0s)
 
 ---------------  T H R E A D  ---------------
 
-Current thread (0x00007faf18808800):  JavaThread "Unknown thread" [_thread_in_vm, id=10243, stack(0x000070000c254000,0x000070000c354000)]
+Current thread (0x00007f8d4580e000):  JavaThread "Unknown thread" [_thread_in_vm, id=10243, stack(0x0000700008255000,0x0000700008355000)]
 
-Stack: [0x000070000c254000,0x000070000c354000],  sp=0x000070000c353b70,  free space=1022k
+Stack: [0x0000700008255000,0x0000700008355000],  sp=0x0000700008354b70,  free space=1022k
 Native frames: (J=compiled Java code, A=aot compiled Java code, j=interpreted, Vv=VM code, C=native code)
 C  [libsystem_platform.dylib+0x15d2]  _platform_strlen+0x12
 V  [libjvm.dylib+0x1ea187]  ClassLoader::setup_boot_search_path(char const*)+0x1d
@@ -41,46 +41,46 @@ C  [libsystem_pthread.dylib+0x247b]  thread_start+0xf
 siginfo: si_signo: 11 (SIGSEGV), si_code: 1 (SEGV_MAPERR), si_addr: 0x0000000000000000
 
 Registers:
-RAX=0x00000001091368f2, RBX=0x0000000109139990, RCX=0x0000000000000000, RDX=0x0000000000000000
-RSP=0x000070000c353b70, RBP=0x000070000c353b70, RSI=0x0000000000000000, RDI=0x0000000000000000
+RAX=0x00000001089368f2, RBX=0x0000000108939990, RCX=0x0000000000000000, RDX=0x0000000000000000
+RSP=0x0000700008354b70, RBP=0x0000700008354b70, RSI=0x0000000000000000, RDI=0x0000000000000000
 R8 =0x0000000000000000, R9 =0x0000000000000000, R10=0x0000000000000000, R11=0x0000000000000000
-R12=0x00007faf18808800, R13=0x000070000c353f80, R14=0x0000000108daabfa, R15=0x000070000c353ef7
+R12=0x00007f8d4580e000, R13=0x0000700008354f80, R14=0x00000001085aabfa, R15=0x0000700008354ef7
 RIP=0x00007fff205945d2, EFLAGS=0x0000000000010246, ERR=0x0000000000000004
   TRAPNO=0x000000000000000e
 
-Top of Stack: (sp=0x000070000c353b70)
-0x000070000c353b70:   000070000c353c90 00000001089ea187
-0x000070000c353b80:   00007faf16f050e0 0000000000000008
-0x000070000c353b90:   00007faf14e06b20 0000000000000040
-0x000070000c353ba0:   000070000c353bd0 0000000108e2447c
-0x000070000c353bb0:   0000000000000038 0000000000000008
-0x000070000c353bc0:   00007faf16f07290 0000000000000040
-0x000070000c353bd0:   000070000c353c30 0000000108e22a69
-0x000070000c353be0:   000070000c353c10 0000000108dcd869
-0x000070000c353bf0:   00007faf16f050e0 00007faf16f07290
-0x000070000c353c00:   00007faf16f05380 00007faf14e06ba0
-0x000070000c353c10:   000070000c353c50 0000000108e230ec
-0x000070000c353c20:   00007faf16f07290 00007faf16f07290
-0x000070000c353c30:   0000000000000004 0000000108f83b18
-0x000070000c353c40:   000000000000000b 0000000000000000
-0x000070000c353c50:   1576669be3260002 0000000000000000
-0x000070000c353c60:   0000000108daabfa 0000000109139990
-0x000070000c353c70:   00007faf18808800 000070000c353f80
-0x000070000c353c80:   0000000108daabfa 000070000c353ef7
-0x000070000c353c90:   000070000c353cc0 00000001089ecb76
-0x000070000c353ca0:   00007faf18808800 00007faf18808800
-0x000070000c353cb0:   0000000109139990 0000000108daabfa
-0x000070000c353cc0:   000070000c353d10 0000000108b7e881
-0x000070000c353cd0:   00007faf18808800 00007faf16f044b0
-0x000070000c353ce0:   00007faf16f044f0 00007faf16f04500
-0x000070000c353cf0:   00007faf16f045d8 00000000000000d8
-0x000070000c353d00:   00007faf16f046f0 0000000109139990
-0x000070000c353d10:   000070000c353ea0 0000000108ef1587
-0x000070000c353d20:   0000000000000000 0000000000000000
-0x000070000c353d30:   0000000000000000 0000000000000000
-0x000070000c353d40:   0000000000000000 0000000000000000
-0x000070000c353d50:   0000000000000000 0000000000000000
-0x000070000c353d60:   0000000000000100 0000000000000000 
+Top of Stack: (sp=0x0000700008354b70)
+0x0000700008354b70:   0000700008354c90 00000001081ea187
+0x0000700008354b80:   00007f8d4541c6a0 0000000000000008
+0x0000700008354b90:   00007f8d4541ad00 0000000000000040
+0x0000700008354ba0:   0000700008354bd0 000000010862447c
+0x0000700008354bb0:   0000000000000038 0000000000000008
+0x0000700008354bc0:   00007f8d4541fa80 0000000000000040
+0x0000700008354bd0:   0000700008354c30 0000000108622a69
+0x0000700008354be0:   0000700008354c10 00000001085cd869
+0x0000700008354bf0:   00007f8d4541c6a0 00007f8d4541fa80
+0x0000700008354c00:   00007f8d4541c8e0 00007f8d4541ad80
+0x0000700008354c10:   0000700008354c50 00000001086230ec
+0x0000700008354c20:   00007f8d4541fa80 00007f8d4541fa80
+0x0000700008354c30:   0000000000000004 0000000108783b18
+0x0000700008354c40:   000000000000000b 0000000000000000
+0x0000700008354c50:   73a284380fee00b5 0000000000000000
+0x0000700008354c60:   00000001085aabfa 0000000108939990
+0x0000700008354c70:   00007f8d4580e000 0000700008354f80
+0x0000700008354c80:   00000001085aabfa 0000700008354ef7
+0x0000700008354c90:   0000700008354cc0 00000001081ecb76
+0x0000700008354ca0:   00007f8d4580e000 00007f8d4580e000
+0x0000700008354cb0:   0000000108939990 00000001085aabfa
+0x0000700008354cc0:   0000700008354d10 000000010837e881
+0x0000700008354cd0:   00007f8d4580e000 00007f8d4541c620
+0x0000700008354ce0:   00007f8d4541ce50 00007f8d4541ce60
+0x0000700008354cf0:   00007f8d4541cf38 00000000000000d8
+0x0000700008354d00:   00007f8d4541cda0 0000000108939990
+0x0000700008354d10:   0000700008354ea0 00000001086f1587
+0x0000700008354d20:   0000000000000000 0000000000000000
+0x0000700008354d30:   0000000000000000 0000000000000000
+0x0000700008354d40:   0000000000000000 0000000000000000
+0x0000700008354d50:   0000000000000000 0000000000000000
+0x0000700008354d60:   0000000000000100 0000000000000000 
 
 Instructions: (pc=0x00007fff205945d2)
 0x00007fff205944d2:   74 09 48 83 c1 01 48 39 d1 72 e3 5d c3 90 55 48
@@ -121,21 +121,21 @@ Instructions: (pc=0x00007fff205945d2)
 ---------------  P R O C E S S  ---------------
 
 Threads class SMR info:
-_java_thread_list=0x00007faf16904aa0, length=0, elements={
+_java_thread_list=0x00007f8d454136f0, length=0, elements={
 }
 
 Java Threads: ( => current thread )
 
 Other Threads:
 
-[error occurred during error reporting (printing all threads), id 0xb, SIGSEGV (0xb) at pc=0x0000000108ef28a2]
+[error occurred during error reporting (printing all threads), id 0xb, SIGSEGV (0xb) at pc=0x00000001086f28a2]
 
 VM state:not at safepoint (not fully initialized)
 
 VM Mutex/Monitor currently owned by a thread: None
 
 
-[error occurred during error reporting (printing compressed oops mode), id 0xb, SIGSEGV (0xb) at pc=0x0000000108f09904]
+[error occurred during error reporting (printing compressed oops mode), id 0xb, SIGSEGV (0xb) at pc=0x0000000108709904]
 
 Deoptimization events (0 events):
 No events
@@ -147,9 +147,9 @@ Internal exceptions (0 events):
 No events
 
 Events (3 events):
-Event: 0.009 Protecting memory [0x000070000c254000,0x000070000c258000] with protection modes 0
+Event: 0.009 Protecting memory [0x0000700008255000,0x0000700008259000] with protection modes 0
 Event: 0.010 Loaded shared library /Users/zhangjin/anaconda3/lib/libzip.dylib
-Event: 0.012 Loaded shared library /Users/zhangjin/anaconda3/lib/libjimage.dylib
+Event: 0.011 Loaded shared library /Users/zhangjin/anaconda3/lib/libjimage.dylib
 
 
 Dynamic libraries:
@@ -157,7 +157,7 @@ Dynamic libraries:
 0x00007fff22403000 	/System/Library/Frameworks/Security.framework/Versions/A/Security
 0x00007fff333db000 	/System/Library/Frameworks/ApplicationServices.framework/Versions/A/ApplicationServices
 0x00007fff2a68c000 	/usr/lib/libz.1.dylib
-0x0000000102750000 	/Users/zhangjin/anaconda3/lib/jli/libjli.dylib
+0x0000000101f0e000 	/Users/zhangjin/anaconda3/lib/jli/libjli.dylib
 0x00007fff2a754000 	/usr/lib/libSystem.B.dylib
 0x00007fff22e2a000 	/System/Library/Frameworks/AppKit.framework/Versions/C/AppKit
 0x00007fff25cc2000 	/System/Library/Frameworks/CoreData.framework/Versions/A/CoreData
@@ -402,11 +402,11 @@ Dynamic libraries:
 0x00007fff2d2bd000 	/System/Library/PrivateFrameworks/AudioResourceArbitration.framework/Versions/A/AudioResourceArbitration
 0x00007fff2b2ba000 	/System/Library/PrivateFrameworks/IconFoundation.framework/Versions/A/IconFoundation
 0x00007fff2fde6000 	/System/Library/PrivateFrameworks/SpeechRecognitionCore.framework/Versions/A/SpeechRecognitionCore
-0x0000000108800000 	/Users/zhangjin/anaconda3/lib/server/libjvm.dylib
-0x0000000102783000 	/Users/zhangjin/anaconda3/lib/libverify.dylib
-0x0000000102794000 	/Users/zhangjin/anaconda3/lib/libjava.dylib
-0x00000001027cb000 	/Users/zhangjin/anaconda3/lib/libzip.dylib
-0x00000001027d7000 	/Users/zhangjin/anaconda3/lib/libjimage.dylib
+0x0000000108000000 	/Users/zhangjin/anaconda3/lib/server/libjvm.dylib
+0x0000000101f3f000 	/Users/zhangjin/anaconda3/lib/libverify.dylib
+0x0000000101f50000 	/Users/zhangjin/anaconda3/lib/libjava.dylib
+0x0000000101fc7000 	/Users/zhangjin/anaconda3/lib/libzip.dylib
+0x0000000101fd3000 	/Users/zhangjin/anaconda3/lib/libjimage.dylib
 
 
 VM Arguments:
@@ -452,11 +452,11 @@ SIGQUIT: SIG_DFL, sa_mask[0]=00000000000000000000000000000000, sa_flags=none
 
 OS:uname:Darwin 20.3.0 Darwin Kernel Version 20.3.0: Thu Jan 21 00:07:06 PST 2021; root:xnu-7195.81.3~1/RELEASE_X86_64 x86_64
 rlimit: STACK 8192k, CORE 0k, NPROC 2784, NOFILE 10240, AS infinity, DATA infinity, FSIZE infinity
-load average:2.80 2.19 2.98
+load average:3.68 3.70 4.00
 
 CPU:total 12 (initial active 12) 
 
-Memory: 4k page, physical 16777216k(137528k free), swap 4194304k(1090048k free)
+Memory: 4k page, physical 16777216k(453848k free), swap 3145728k(1458688k free)
 
 vm_info: OpenJDK 64-Bit Server VM (11.0.6+8-b765.1) for bsd-amd64 JRE (11.0.6+8-b765.1), built on Feb 21 2020 17:31:52 by "builduser" with gcc 4.2.1 Compatible Apple LLVM 10.0.0 (clang-1000.10.44.4)
 
