@@ -37,9 +37,9 @@ class ApproximateGPModel(ApproximateGP):
         variational_strategy = gpytorch.variational.VariationalStrategy(
             self, inducing_points, variational_distribution, learn_inducing_locations=True
         )
-        super(GPModel, self).__init__(variational_strategy)
+        super(ApproximateGPModel, self).__init__(variational_strategy)
         self.mean_module = gpytorch.means.ConstantMean()
-        kernel = gpytorch.kernels.MaternKernel()
+        kernel = gpytorch.kernels.RBFKernel(length_scale=0.01)
         # kernel = gpytorch.kernels.RBFKernel(length_scale=1) + gpytorch.kernels.WhiteKernel()
         self.covar_module = gpytorch.kernels.ScaleKernel(kernel)
 
@@ -88,14 +88,14 @@ class VariationalGP():
         train_x = torch.from_numpy(train_x).contiguous().float()
         train_y = torch.from_numpy(train_y).contiguous().float()
         train_dataset = TensorDataset(train_x, train_y)
-        train_loader = DataLoader(train_dataset, batch_size=2048, shuffle=True)
+        train_loader = DataLoader(train_dataset, batch_size=256, shuffle=True)
 
-        inducing_points = train_x[:4000, :]
+        inducing_points = train_x[:2000, :]
         self.model = ApproximateGPModel(inducing_points=inducing_points)
         self.likelihood = gpytorch.likelihoods.GaussianLikelihood()
 
         # train the model
-        num_epochs = 5
+        num_epochs = 10
 
         self.model.train()
         self.likelihood.train()
@@ -202,14 +202,10 @@ class Model(object):
         We already provide a random number generator for reproducibility.
         """
         self.rng = np.random.default_rng(seed=0)
-        # kernel = RBF() + WhiteKernel()
-        # self.gpr = GaussianProcessRegressor(kernel=kernel, random_state=0, normalize_y=True)
-        # self.model = None
-        # self.likelihood = None
         # TODO: Add custom initialization for your model here if necessary
         # self.model = VariationalGP()
-        # self.model = NaiveGP()
-        self.model = NaiveGP_gpy()
+        self.model = NaiveGP()
+        # self.model = NaiveGP_gpy()
         print("self.model: ", self.model)
 
 
@@ -222,26 +218,8 @@ class Model(object):
             containing your predictions, the GP posterior mean, and the GP posterior stddev (in that order)
         """
         return  self.model.predict(x)
-        # x = torch.from_numpy(x).float()
-        # # model = self.model
-        # # likelihood = self.likelihood
-        # self.model.eval()
-        # self.likelihood.eval()
-        # means = torch.tensor([0.])
-        # with torch.no_grad():
-        #     preds = self.model(x)
-        # gp_mean, gp_std = preds.mean, preds.stddev
-        # gp_mean = gp_mean.cpu().detach().numpy()
-        # gp_std  = gp_std.cpu().detach().numpy()
         # # TODO: Use your GP to estimate the posterior mean and stddev for each location here
-        # # gp_mean, gp_std = self.gpr.predict(x, return_std=True)
-        # #
-        # # gp_mean = np.zeros(x.shape[0], dtype=float)
-        # # gp_std = np.zeros(x.shape[0], dtype=float)
-        #
         # # TODO: Use the GP posterior to form your predictions here
-        # predictions = gp_mean
-        # return predictions, gp_mean, gp_std
 
     def fit_model(self, train_x: np.ndarray, train_y: np.ndarray):
         """
@@ -250,63 +228,7 @@ class Model(object):
         :param train_y: Training pollution concentrations as a 1d NumPy float array of shape (NUM_SAMPLES,)
         """
         self.model.fit_model(train_x, train_y)
-        # train_x = torch.from_numpy(train_x).contiguous().float()
-        # train_y = torch.from_numpy(train_y).contiguous().float()
-        # train_dataset = TensorDataset(train_x, train_y)
-        # train_loader = DataLoader(train_dataset, batch_size=1024, shuffle=True)
-        #
-        # inducing_points = train_x[:1000, :]
-        # self.model = GPModel(inducing_points=inducing_points)
-        # self.likelihood = gpytorch.likelihoods.GaussianLikelihood()
-        #
-        # # train the model
-        # num_epochs = 10
-        #
-        # self.model.train()
-        # self.likelihood.train()
-        #
-        # # two optimizers
-        # variational_ngd_optimizer = gpytorch.optim.NGD(self.model.variational_parameters(),
-        #                                                num_data=train_y.size(0), lr=0.01)
-        # hyperparameter_optimizer = torch.optim.Adam([
-        #     {'params': self.model.hyperparameters()},
-        #     {'params': self.likelihood.parameters()},
-        # ], lr=0.1)
-        #
-        # # Our loss object. We're using the VariationalELBO
-        # mll = gpytorch.mlls.VariationalELBO(self.likelihood, self.model, num_data=train_y.size(0))
-        #
-        # epochs_iter = tqdm.tqdm(range(num_epochs), desc="Epoch")
-        # losses = []
-        # for i in epochs_iter:
-        #     # Within each iteration, we will go over each minibatch of data
-        #     minibatch_iter = tqdm.tqdm(train_loader, desc="Minibatch", leave=False)
-        #     for x_batch, y_batch in minibatch_iter:
-        #         variational_ngd_optimizer.zero_grad()
-        #         hyperparameter_optimizer.zero_grad()
-        #         output = self.model(x_batch)
-        #         loss = -mll(output, y_batch)
-        #         losses.append(loss.item())
-        #         minibatch_iter.set_postfix(loss=loss.item())
-        #         loss.backward()
-        #         variational_ngd_optimizer.step()
-        #         hyperparameter_optimizer.step()
-
-
-        #
-        # plt.plot(losses)
         # TODO: Fit your model here
-        # perm = np.random.permutation(train_x.shape[0])
-        # train_x = train_x[perm]
-        # train_y = train_y[perm]
-        # N = 4000
-        # if train_x.shape[0] > N:
-        #     train_x = train_x[:N, :]
-        #     train_y = train_y[:N]
-        # self.gpr.fit(train_x, train_y)
-        # print("score of gpr (RBF): ", self.gpr.score(train_x, train_y))
-        # print("LLD of gpr: ", self.gpr.log_marginal_likelihood())
-        # print("parameters of gpr: ", self.gpr.get_params())
 
 
 def cost_function(y_true: np.ndarray, y_predicted: np.ndarray) -> float:
