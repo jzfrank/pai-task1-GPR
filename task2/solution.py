@@ -132,7 +132,7 @@ class Model(object):
                     loss.backward()
                 else:
                     # BayesNet training step via Bayes by backprop
-                    assert isinstance(self.network, BayesNet)
+                    # assert isinstance(self.network, BayesNet)
 
                     # TODO: Implement Bayes by backprop training here
                     current_logits, _, _ = self.network(batch_x)
@@ -153,7 +153,7 @@ class Model(object):
                     if isinstance(self.network, DenseNet):
                         current_logits = self.network(batch_x)
                     else:
-                        assert isinstance(self.network, BayesNet)
+                        # assert isinstance(self.network, BayesNet)
                         current_logits, _, _ = self.network(batch_x)
                         # current_logits = self.network(batch_x)
                     current_accuracy = (current_logits.argmax(axis=1) == batch_y).float().mean()
@@ -402,10 +402,10 @@ class UnivariateGaussian(ParameterDistribution):
         log_scale = math.log(self.sigma)
         return -((values - self.mu) ** 2) / (2 * var) - log_scale - math.log(math.sqrt(2 * math.pi))
 
-    def sample(self, sample_shape=torch.Size()) -> torch.Tensor:
+    def sample(self) -> torch.Tensor:
         # TODO: Implement this
         with torch.no_grad():
-            return torch.normal(self.mu.expand(sample_shape), self.sigma.expand(sample_shape))
+            return torch.normal(self.mu, self.sigma)
 
 
 class MultivariateDiagonalGaussian(ParameterDistribution):
@@ -425,11 +425,15 @@ class MultivariateDiagonalGaussian(ParameterDistribution):
 
     def log_likelihood(self, values: torch.Tensor) -> torch.Tensor:
         # TODO: Implement this
-        return 0.0
+        diff = values - self.mu
+        sigma = F.softplus(self.rho)
+        D = self.mu.size(0)
+
+        return -0.5 * diff.t() * sigma.inverse() * diff - 0.5 * D * math.log(2 * math.pi) - 0.5 * math.log(sigma.det())
 
     def sample(self) -> torch.Tensor:
-        # TODO: Implement this
-        raise NotImplementedError()
+        with torch.no_grad():
+            return torch.distributions.multivariate_normal(self.mu, F.softplus(self.rho))
 
 
 def evaluate(model: Model, eval_loader: torch.utils.data.DataLoader, data_dir: str, output_dir: str):
