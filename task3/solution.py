@@ -4,10 +4,17 @@ import typing
 import logging
 import numpy as np
 from scipy.optimize import fmin_l_bfgs_b
+from scipy.optimize import minimize
+from scipy.optimize import NonlinearConstraint
 import matplotlib.pyplot as plt
-
-from sklearn.gaussian_process.kernels import *
 from sklearn.gaussian_process import GaussianProcessRegressor
+from sklearn.gaussian_process.kernels import RBF, WhiteKernel
+
+from scipy.stats import norm
+
+from warnings import simplefilter
+from sklearn.exceptions import ConvergenceWarning
+simplefilter("ignore", category=ConvergenceWarning)
 
 EXTENDED_EVALUATION = False
 # Set `EXTENDED_EVALUATION` to `True` in order to visualize your predictions.
@@ -22,10 +29,18 @@ class BO_algo(object):
 
         # TODO: enter your code here
         self.previous_points = []
+        self.X = []
+        self.z = [] # value of objective function
+        self.c = [] # value of condition function
         # IMPORTANT: DO NOT REMOVE THOSE ATTRIBUTES AND USE sklearn.gaussian_process.GaussianProcessRegressor instances!
         # Otherwise, the extended evaluation will break.
-        self.constraint_model = GaussianProcessRegressor(kernel=ConstantKernel(constant_value=1.2)+RBF(length_scale=1.5), random_state=0)  # TODO : GP model for the constraint function
-        self.objective_model = GaussianProcessRegressor(kernel=ConstantKernel(constant_value=3.5)+RBF(length_scale=2), random_state=0)  # TODO : GP model for your acquisition function
+        self.sigma_f = 0.01
+        self.sigma_c = 0.005
+        self.objective_model =  GaussianProcessRegressor(kernel=1.5 * RBF(1.5) + WhiteKernel(noise_level=self.sigma_f))
+        self.constraint_model = GaussianProcessRegressor(kernel=3.5 * RBF(2) + WhiteKernel(noise_level=self.sigma_c))
+        self.beta = 5
+        # self.constraint_model = None  # TODO : GP model for the constraint function
+        # self.objective_model = None  # TODO : GP model for your acquisition function
 
     def next_recommendation(self) -> np.ndarray:
         """
@@ -39,6 +54,55 @@ class BO_algo(object):
 
         # TODO: enter your code here
         # In implementing this function, you may use optimize_acquisition_function() defined below.
+        return self.optimize_acquisition_function()
+
+    def optimize_acquisition_function_new(self) -> np.ndarray:  # DON'T MODIFY THIS FUNCTION
+        """
+        Optimizes the acquisition function.
+
+        Returns
+        -------
+        x_opt: np.ndarray
+            1 x domain.shape[0] array containing the point that approximately maximizes the acquisition function.
+        """
+
+        def objective(x: np.array):
+            return  - self.acquisition_function(x)
+
+        f_values = []
+        x_values = []
+
+        # Restarts the optimization 20 times and pick best solution
+        for _ in range(20):
+            x0 = domain_x[0, 0] + (domain_x[0, 1] - domain_x[0, 0]) * \
+                 np.random.rand(1)
+            x1 = domain_x[1, 0] + (domain_x[1, 1] - domain_x[1, 0]) * \
+                 np.random.rand(1)
+            # print( "x0, x1", x0, x1)
+            x0 = x0[0]
+            x1 = x1[0]
+            result = minimize(objective, np.array([x0, x1]),
+                              bounds=domain_x,
+                              method="SLSQP",
+                              # constraints=({
+                              #     "type": "ineq",
+                              #     "fun": lambda x: -1e-5 - float(self.constraint_model.predict(x.reshape(1, -1)))
+                              # }),
+                              # ineq: C(X) >= 0
+                              tol=1e-6)
+            # print("result.x: ", result.x)
+            x_values.append(np.clip(result.x, *domain_x[0]))
+            f_values.append(result.fun)
+            # print("selected belief con before clipping:", float(self.constraint_model.predict(result.x.reshape(1, -1))))
+            # input()
+            # assert  float(self.constraint_model.predict(result.x.reshape(1, -1))) <= 0
+        # input("pause...")
+        # print("f_values:", f_values)
+        ind = np.argmin(f_values)
+        # print("selected x_values: ", x_values[ind])
+        # print("selected belief obj:", float(self.objective_model.predict(x_values[ind].reshape(1,-1))))
+        # print("selected belief con:", float(self.constraint_model.predict(x_values[ind].reshape(1,-1))))
+        return np.atleast_2d(x_values[ind])
 
     def optimize_acquisition_function(self) -> np.ndarray:  # DON'T MODIFY THIS FUNCTION
         """
@@ -84,14 +148,22 @@ class BO_algo(object):
         af_value: float
             value of the acquisition function at x
         """
-
-        # TODO: enter your code here
-        # https://github.com/daizhongxiang/Bayesian-Optimization-Meets-Bayesian-Optimal-Stopping/blob/master/bayesian_optimization.py
-
-        kappa = 2.576
-        mean, sigma = self.objective_model.predict(np.atleast_2d(x), return_std=True)
-
-        return mean + kappa * sigma
+        assert x.shape == (2, )
+        mu_obj, sigma_obj = [float(i) for i in
+                     self.objective_model.predict(x.reshape(1, -1), return_std=True)]
+        mu_con, sigma_con = [float(i) for i in
+                     self.constraint_model.predict(x.reshape(1, -1), return_std=True)]
+        t = min(self.z) if len(self.z) > 0 else 0
+        z = (t - mu_obj) / sigma_obj
+        return sigma_obj * (
+            z * norm.cdf(z) + norm.pdf(z)
+        ) * norm.cdf(- mu_con / sigma_con)
+        # return (
+        #     - mu_obj + self.beta * sigma_obj
+        #        ) * norm.cdf(- mu_con / sigma_con)
+        # return   (- mu_obj + self.beta * sigma_obj) * norm.cdf(- mu_con / sigma_con)
+        # # TODO: enter your code here
+        # raise NotImplementedError
 
     def add_data_point(self, x: np.ndarray, z: float, c: float):
         """
@@ -109,8 +181,13 @@ class BO_algo(object):
 
         assert x.shape == (1, 2)
         self.previous_points.append([float(x[:, 0]), float(x[:, 1]), float(z), float(c)])
-        # TODO: enter your code here
-        raise NotImplementedError
+        self.X.append(x.reshape((2,)))
+        self.z.append(z)
+        self.c.append(c)
+        self.objective_model.fit(self.X, self.z)
+        self.constraint_model.fit(self.X, self.c)
+        # # TODO: enter your code here
+        # raise NotImplementedError
 
     def get_solution(self) -> np.ndarray:
         """
@@ -121,9 +198,68 @@ class BO_algo(object):
         solution: np.ndarray
             1 x domain.shape[0] array containing the optimal solution of the problem
         """
+        def objective(x: np.array):
+            return float(
+            self.objective_model.predict(x.reshape(1, -1))
+        )
 
-        # TODO: enter your code here
-        raise NotImplementedError
+        def confidence_constraint(x):
+            mu_con, sigma_con = [float(i) for i in
+                                 self.constraint_model.predict(x.reshape(1, -1), return_std=True)]
+            return norm.cdf(- mu_con / sigma_con)
+
+        f_values = []
+        x_values = []
+
+        cnt = 0  # number of big while loops
+        tol = 1e-6
+        margin = 0.01
+        epsilon = 0.1
+        while len(f_values) == 0:
+            cnt += 1
+            # Restarts the optimization 100 times and pick best solution
+            print("tol: ", tol)
+            for _ in range(100):
+                x0 = domain_x[0, 0] + (domain_x[0, 1] - domain_x[0, 0]) * \
+                     np.random.rand(1)
+                x1 = domain_x[1, 0] + (domain_x[1, 1] - domain_x[1, 0]) * \
+                     np.random.rand(1)
+                # print( "x0, x1", x0, x1)
+                x0 = x0[0]
+                x1 = x1[0]
+                result = minimize(objective, np.array([x0, x1]),
+                                  bounds=domain_x,
+                                  method="SLSQP",
+                                  constraints=(
+                                      {
+                                      "type": "ineq",
+                                      "fun": lambda x: - margin - float(self.constraint_model.predict(x.reshape(1, -1)))
+                                  },
+                                               {
+                                      "type": "ineq",
+                                      "fun": lambda x:  confidence_constraint(x) - (1-epsilon),
+                                  }),
+                                  # ineq: C(X) >= 0
+                                  tol=tol)
+                # to make sure constraints are not violated
+                # if cnt < 5 and float(self.constraint_model.predict(result.x.reshape(1,-1))) > - 0.01 * margin:
+                if (
+                        cnt < 5
+                    # and confidence_constraint(result.x) > 1 - epsilon
+                    and float(self.constraint_model.predict(result.x.reshape(1,-1))) > - 0.01 * margin
+                ):
+                    continue
+                x_values.append(np.clip(result.x, *domain_x[0]))
+                f_values.append(result.fun)
+            tol = 10 * tol
+
+        ind = np.argmin(f_values)
+        print("selected belief obj:", float(self.objective_model.predict(x_values[ind].reshape(1,-1))))
+        print("selected belief con:", float(self.constraint_model.predict(x_values[ind].reshape(1,-1))))
+        return np.atleast_2d(x_values[ind])
+        # return self.next_recommendation()
+        # # TODO: enter your code here
+        # raise NotImplementedError
 
 
 """ 
@@ -260,10 +396,12 @@ def train_on_toy(agent, iteration):
     os.environ['PYTHONHASHSEED'] = str(seed)
     random.seed(seed)
     np.random.seed(seed)
+    print("------toy example------")
     for j in range(iteration):
+        print("at iteration: ", j)
         # Get next recommendation
         x = agent.next_recommendation()
-
+        print("agent next recommendation:", x, x.shape)
         # Check for valid shape
         assert x.shape == (1, domain_x.shape[0]), \
             f"The function next recommendation must return a numpy array of " \
@@ -272,8 +410,10 @@ def train_on_toy(agent, iteration):
         # Obtain objective and constraint observation
         obj_val = f(x) + np.random.normal(size=(x.shape[0],), scale=0.01)
         cost_val = c(x) + np.random.normal(size=(x.shape[0],), scale=0.005)
+        print("obj_val:", obj_val)
+        print("cost_val:", cost_val)
         agent.add_data_point(x, obj_val, cost_val)
-
+    print("----entering validation------")
     # Validate solution
     solution = np.atleast_2d(agent.get_solution())
     assert solution.shape == (1, domain_x.shape[0]), \
@@ -286,11 +426,13 @@ def train_on_toy(agent, iteration):
 
     # Compute regret
     f_opt, f_max, x_opt, x_max = get_valid_opt(f, c, domain_x)
+    print("final c solution:", c(solution))
     if c(solution) > 0.0:
         regret = 1
     else:
         regret = (f(solution) - f_opt) / f_max
 
+    print(f"Optimal position: {x_opt}, X_max: {x_max}")
     print(f'Optimal value: {f_opt}\nProposed solution {solution}\nSolution value '
           f'{f(solution)}\nRegret{regret}')
     return agent
