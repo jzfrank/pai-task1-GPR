@@ -1,4 +1,6 @@
-# pai_task1_blueberry
+# pai_tasks
+
+## task1
 PAI task 1: Gaussian Process
 
 - The best model so far is the NaiveGP. The larger the N is, the more subsamples we select, the better the model performance. In particular, if N = 4000, we get cost around 20; if N = 8000, we get cost around 12. That is, we could simply pass the task by the naive model with a reasonably good computing resources. If one has a server, we could even let N = 15000, which will give the full model. 
